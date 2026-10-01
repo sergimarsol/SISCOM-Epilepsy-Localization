@@ -1,0 +1,8 @@
+# Tested (smoke run on synthetic volumes) with Python 3.13 and the versions below.
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+nibabel>=5.0
+nilearn>=0.10
+dipy>=1.7
+mni-to-atlas>=1.2

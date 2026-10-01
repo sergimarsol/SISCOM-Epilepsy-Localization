@@ -48,3 +48,6 @@ mlruns/
 *.nii.gz
 *.mat
 data/
+
+# Generated figures (derived from patient scans; never commit)
+figures/

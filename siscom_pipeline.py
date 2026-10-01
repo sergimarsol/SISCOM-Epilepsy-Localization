@@ -2,31 +2,36 @@
 """SISCOM pipeline: Subtraction Ictal SPECT CO-registered to MRI.
 
 Usage:
-    python siscom_pipeline.py --data-dir data/ --out-dir figures/
+    python siscom_pipeline.py --data-dir data --out-dir figures
 
 Expected inputs in --data-dir (co-registered NIfTI volumes): crICTAL.nii, cINTERICTAL.nii, RM.nii
 
-# **Pràctica 7 - Tècniques d'imatge multimodalitat en epilèpsia, Dra Aida Niñerola**
-#### Aplicacions Mèdiques de l'Enginyeria I, Enginyeria Biomèdica
-#### Sergi Marsol Torrent
-#### Desembre 2023
+Lab 7 - Multimodal imaging techniques in epilepsy (supervisor: Dr. Aida Niñerola)
+Aplicacions Mèdiques de l'Enginyeria I (Medical Applications of Engineering I),
+Biomedical Engineering, Universitat de Barcelona
+Sergi Marsol Torrent - December 2023
+
+Originally written as a Google Colab notebook; the notebook's markdown cells are
+kept below as (English-translated) string blocks between the code sections.
 
 ____
-## **Taula de continguts**
+## Table of contents
 
-1. Instal·lacions i importacions
-2. Visualització imatges
-3. Màscara del cervell per SPECT i RM
-4. Normalització en intensitat
-5. Imatge diferència
-6. Selecció de la zona epiletògena
-7. Fusió de la zona epiletògena
-8. Localització estructura anatòmica
+1. Installs and imports
+2. Image visualization
+3. Brain mask for SPECT and MRI
+4. Intensity normalization
+5. Difference image
+6. Epileptogenic-zone selection
+7. Epileptogenic-zone fusion
+8. Anatomical-structure localization
 
 ____
-## **1. Instal·lacions i importacions**
+## 1. Installs and imports
 
-En aquest apartat s'instal·len i s'importen les llibreries necessàries. També es connecta el Google Drive on es guarden els fitxers i es fa una primera instància del directori de Drive on es troben els fitxers.
+This section imports the required libraries. (In the original Colab notebook it also
+mounted Google Drive, where the input files were stored; here the input folder is
+given with --data-dir.)
 """
 
 
@@ -58,14 +63,20 @@ out_dir = args.out_dir
 os.makedirs(out_dir, exist_ok=True)
 
 """____
-## **2. Visualització imatges**
+## 2. Image visualization
 
-En aquest apartat es mostren les imatges després del realiniament i el coregistre duts a terme durant la sessió pràctica. Les imatges també es guarden en format jpg en aquest apartat i els següents. Cal comentar que en aquest apartat i en alguns altres casos concrets les imatges es mostren també amb la funció bàsica de matplotlib.pyplot per a una millor observació.
+This section shows the images after the realignment and co-registration performed (in SPM12)
+during the lab session. Images are saved to disk in this section and the following ones. In
+this section, and in a few other specific cases, images are also shown with plain
+matplotlib.pyplot for easier inspection.
 
-**Avís:** totes les imatges que es mostren amb nilearn.plotting s'han centrat a les coordenades (x,y,z) = (33, 1, -75), que corresponen a la Zona Epileptògena trobada. S'ha fet directament així per poder comparar els resultats inicials amb els finals i per veure el procediment sencer d'una forma coherent. També s'ha fet així per a poder utilitzar aquestes imatges per al pòster.
+**Note:** every image shown with nilearn.plotting is centred on (x, y, z) = (33, 1, -75), the
+coordinates of the Epileptogenic Zone (EZ) that was eventually found. This makes it possible to
+compare the initial and final results and to follow the whole procedure consistently; the same
+views were used for the poster.
 
-### SPECT ictal
-La imatge ja ha estat realineada amb la interictal i coregistrada sobre la RM.
+### Ictal SPECT
+This image has already been realigned to the interictal SPECT and co-registered to the MRI.
 """
 
 #create path to file
@@ -82,7 +93,7 @@ ictal_plot = plotting.plot_img(ictal, cut_coords=(33, 1, -75), colorbar=True, ti
 ictal_plot.savefig(os.path.join(out_dir, 'ictal.png'))
 plotting.show()
 
-"""També es fa un plot de la imatge en color i tallant de forma perpendicular a la z en z=118 (aquest valor s'explica més endavant):"""
+"""The image is also plotted in colour as an axial slice perpendicular to z at index z=118 (this value is explained later):"""
 
 #plot of ictal data at z=118 section
 section = 118
@@ -92,8 +103,8 @@ plt.title('SPECT ictal')
 plt.savefig(os.path.join(out_dir, 'ictal2.png')) #save the image
 plt.show()
 
-"""### SPECT interictal
-Aquesta imatge només ha estat coregistrada sobre la RM.
+"""### Interictal SPECT
+This image has only been co-registered to the MRI.
 """
 
 #create path to file
@@ -110,7 +121,7 @@ interictal_plot = plotting.plot_img(interictal, cut_coords=(33, 1, -75), colorba
 interictal_plot.savefig(os.path.join(out_dir, 'interictal.png'))
 plotting.show()
 
-"""També es fa un plot de la imatge en color i tallant de forma perpendicular a la z en z=118 (aquest valor s'explica més endavant):"""
+"""The image is also plotted in colour as an axial slice perpendicular to z at index z=118 (this value is explained later):"""
 
 #plot of interictal data at z=118 section
 section = 118
@@ -120,8 +131,8 @@ plt.title('SPECT interictal')
 plt.savefig(os.path.join(out_dir, 'interictal2.png')) #save image
 plt.show()
 
-"""### RM
-Aquesta imatge no ha passat per cap mena de processament previ.
+"""### MRI
+This image has not undergone any previous processing.
 """
 
 #create path to file
@@ -138,7 +149,7 @@ rm_plot = plotting.plot_img(rm, cut_coords=(33, 1, -75), colorbar=True, title='M
 rm_plot.savefig(os.path.join(out_dir, 'rm.png'))
 plotting.show()
 
-"""En el cas de la RM s'ha fet el plot també en blanc i negre des de cadascun dels eixos, en lloc de només perpendicularment a l'eix z. Es pot veure que s'han usat els talls als índexs x=72, y=104 i z=118, i que això dona el mateix resultat que a la imatge anterior. Això és perquè aquests índexs de la matriu corresponen a les posicions anatòmiques x=33, y=1 i z=-75, que són les que es mostren a totes les imatges (i que contenen la Zona Epileptògena). En les imatges anteriors i posteriors també s'utilitzarà z=118 quan fem referència als índexs de la matriu per a poder veure aquesta mateixa zona."""
+"""For the MRI, a greyscale plot is also made along each of the three axes, instead of only perpendicular to z. The slices at array indices x=72, y=104 and z=118 give the same view as the previous image, because these array indices correspond to the anatomical positions x=33, y=1, z=-75 shown in every figure (which contain the Epileptogenic Zone). In the previous and following figures, z=118 is also used whenever array indices are referred to, in order to show this same region."""
 
 #plots of RM data at  x=72, y=104 i z=118 sections
 plt.figure("RM")
@@ -153,9 +164,11 @@ plt.savefig(os.path.join(out_dir, 'rm2.png')) #save image
 plt.show()
 
 """____
-## **3. Màscara del cervell per SPECT i RM**
+## 3. Brain mask for SPECT and MRI
 
-La màscara es calcula a partir de la RM utilitzant el mètode d'Otsu (de la llibreria dipy). S'ha escollit aquest mètode perquè sembla ser el més adequat per a triar les zones d'interés a partir de la imatge estructural de RM. També es podria haver fet a partir dels SPECTs o amb una funció de la llibreria nilearn).
+The mask is computed from the MRI with Otsu's method (dipy's median_otsu). This method was chosen
+because it seemed the most suitable for selecting the regions of interest from the structural MRI.
+It could also have been computed from the SPECTs, or with a nilearn function.
 """
 
 rm_data_masked, mask = median_otsu(rm_data) #calculate mask and masked RM data
@@ -175,11 +188,11 @@ plt.title('MRI with mask')
 plt.savefig(os.path.join(out_dir, 'rm_mask.png')) #save image
 plt.show()
 
-"""En les imatges mostrades a dalt, es pot observar la RM a la meitat del cervell sense la màscara, la màscara, i el cervell amb la màscara aplicada, en aquest ordre. Es pot observar com la màscara elimina el fons i el soroll de bona part de la imatge.
+"""The figure above shows, in order, the MRI at mid-brain without the mask, the mask, and the brain with the mask applied. The mask removes the background and noise from a large part of the image.
 
-A continuació, s'aplica la màscara trobada a les 3 imatges (ictal, interictal i RM) multiplicant els arrays que conformen la imatge i la màscara directament. Això simplement dona valor 0 a les zones fora de la màscara i deixa els valors que tenien a les zones incloses a la màscara.
+Next, the mask is applied to the 3 images (ictal, interictal and MRI) by element-wise multiplication of each image array with the mask. This sets voxels outside the mask to 0 and keeps the original values inside it.
 
-### Màscara SPECT Ictal
+### Ictal SPECT mask
 """
 
 #apply mask to ictal image with product
@@ -193,7 +206,7 @@ ictal_mask_plot = plotting.plot_img(ictal_masked, cut_coords=(33, 1, -75), color
 ictal_mask_plot.savefig(os.path.join(out_dir, 'ictal_masked.png'))
 plotting.show()
 
-"""### Màscara SPECT Interictal"""
+"""### Interictal SPECT mask"""
 
 #apply mask to interictal image with product
 interictal_data_masked = interictal_data*mask
@@ -206,7 +219,7 @@ interictal_masked_plot = plotting.plot_img(interictal_masked, cut_coords=(33, 1,
 interictal_masked_plot.savefig(os.path.join(out_dir, 'interictal_masked.png'))
 plotting.show()
 
-#apply mask to interictal image with product
+#apply mask to MRI image with product
 rm_data_masked = rm_data*mask
 
 #transform to nifti image
@@ -218,9 +231,9 @@ rm_masked_plot.savefig(os.path.join(out_dir, 'rm_masked.png'))
 plotting.show()
 
 """____
-## **4. Normalització en intensitat**
+## 4. Intensity normalization
 
-Primer de tot, es mostra l'histograma de la imatge sense normalitzar:
+First, the histogram of the non-normalized images is shown:
 """
 
 #1D array of the image data
@@ -239,17 +252,17 @@ plt.xlim(-10,200)
 plt.savefig(os.path.join(out_dir, 'histogram_NOT_normalized.png')) #save image
 plt.show()
 
-"""Algunes opcions per normalitzar les dades són:
-1. **Mean normalization** - s'inclou a Zscore normalization.
-2. **Std normalization** - s'inclou a Zscore normalization.
-3. **Zscore normalization** - l'opció utilitzada, consisteix en restar la mitjana i dividir el resultat entre la desviació estàndard. S'aconsegueix tenir una nova mitjana de 0 i una desviació estàndard de 1.
-4. **CDF (Cumulative Distribution Factor) normalization** - consisteix a dividir la suma acumulativa entre la suma en cada valor.
-5. **Min-max normalization** - es calcula un factor de normalització que és la resta del valor màxim menys el mínim i es divideixen els vòxels entre ell, de manera que el resultat es troba entre 0 i 1.
-6. **Log normalization** - consisteix a prendre el logaritme natural dels valors.
+"""Some options for normalizing the data are:
+1. **Mean normalization** - included in Z-score normalization.
+2. **Std normalization** - included in Z-score normalization.
+3. **Z-score normalization** - the option used: subtract the mean and divide by the standard deviation, giving a new mean of 0 and a standard deviation of 1.
+4. **CDF (Cumulative Distribution Factor) normalization** - divide the cumulative sum by the total sum at each value.
+5. **Min-max normalization** - compute a normalization factor equal to the maximum minus the minimum value and divide the voxels by it, so that the result lies between 0 and 1.
+6. **Log normalization** - take the natural logarithm of the values.
 
-Algunes d'aquestes opcions es mostren a continuació (algunes amb correcte funcionament i algunes no):
+Some of these options are shown below (some work correctly and some do not):
 
-**Normalització amb Z-score**
+**Z-score normalization**
 """
 
 #Zscore normalization: subtract mean and divide by standard deviation
@@ -272,9 +285,9 @@ plt.xlim(-1,5)
 plt.savefig(os.path.join(out_dir, 'histogram_z_normalized.png'))
 plt.show()
 
-"""L'histograma mostra diferències clares entre les dades ictals i interictals. Aquest tipus de normalització és el que acabarem utilitzant (amb alguna millora posterior).
+"""The histogram shows clear differences between the ictal and interictal data. This is the normalization that is eventually used (with some later improvements).
 
-**Normalització amb CDF**
+**CDF normalization**
 """
 
 #CDF normalization: divide cumulative sum between sum
@@ -285,7 +298,7 @@ normalized_cdf_interictal_data = np.cumsum(interictal_data_masked) / np.sum(inte
 data_ictal_1D = normalized_cdf_ictal_data.flatten()
 data_interictal_1D = normalized_cdf_interictal_data.flatten()
 
-#plo and save histogram
+#plot and save histogram
 plt.hist(data_ictal_1D, bins = 500)
 plt.hist(data_interictal_1D, bins = 500)
 plt.xlabel('Intensity')
@@ -297,9 +310,9 @@ plt.xlim(0,1)
 plt.savefig(os.path.join(out_dir, 'histogram_cdf_normalized.png'))
 plt.show()
 
-"""En aquest cas, l'histograma obtingut no dona els resultats esperats i es pot descartar aquest mètode. Sembla que alguna part del càlcul no s'ha realitzat correctament, així que es deixa com a exemple erroni però no s'utilitza més enllà.
+"""Here the resulting histogram does not give the expected result, so this method is discarded. Part of the computation appears not to be correct; it is kept as a (failed) example but not used further.
 
-**Normalització min-max**
+**Min-max normalization**
 """
 
 #Min-max normalization
@@ -326,11 +339,11 @@ plt.xlim(-0.1,0.8)
 plt.savefig(os.path.join(out_dir, 'histogram_d_normalized.png'))
 plt.show()
 
-"""D'aquestes opcions s'ha escollit la normalització Z-score pel bon resultat que s'observa a les dades, encara que la normalització min-max també dona bon resultat. A més de la normalització, altres processaments com filtratge de la senyal poden ser afegits. En aquest cas s'ha optat per una millora de la normalització Z-score i per un filtrat.
+"""Of these options, Z-score normalization was chosen because of the good result observed on the data, although min-max normalization also works well. Besides normalization, other processing such as signal filtering can be added. Here, an improved Z-score normalization plus a filtering step was chosen.
 
-**Normalització Z-score eliminant els valors nuls**
+**Z-score normalization excluding zero values**
 
-Primer, s'ha decidit treure els valors 0 de la imatge per a calcular la mitja i la desviació estàndard amb que es fa la normalització. Això s'ha fet perquè aquests valors 0 afecten molt en el resultat (ja que n'hi ha molts) i provenen del background. Per tant, els eliminem per a aquest càlcul, encara que segueixen estant a la imatge.
+First, the zero-valued voxels are excluded when computing the mean and standard deviation used for normalization. These zeros strongly bias the result (there are many of them) and come from the background, so they are left out of this computation, although they remain in the image.
 """
 
 #find the ictal and interictal data that is different from 0
@@ -361,9 +374,9 @@ plt.xlim(-2,3)
 plt.savefig(os.path.join(out_dir, 'histogram_z_normalized2.png'))
 plt.show()
 
-"""**Normalització Z-score amb filtrat de Wiener**
+"""**Z-score normalization with Wiener filtering**
 
-En aquest cas, s'ha aplicat un filtre de Wiener per eliminar el soroll no desitjat de la imatge, ja que s'ha vist que millorava el resultat final. A més, s'ha mantingut el fet de treure els valors 0 a l'hora de calcular la mitjana i la desviació estàndard.
+Here a Wiener filter is applied to remove unwanted noise from the image, since it was found to improve the final result. Zero values are still excluded when computing the mean and standard deviation.
 """
 
 #find the ictal and interictal data that is different from 0
@@ -398,13 +411,13 @@ plt.xlim(-2,3)
 plt.savefig(os.path.join(out_dir, 'histogram_f_normalized.png'))
 plt.show()
 
-"""Aquest histograma és el que representa les dades que finalment s'han utilitzat per als següents apartats. Cal comentar que amb unes dades normalitzades sense eliminar els 0s i sense filtrar els resultats són semblants, però pel que he trobat els resultats obtinguts amb aquestes dades semblen lleugerament més precisos.
+"""This histogram represents the data finally used in the following sections. With data normalized without removing the zeros and without filtering, the results are similar, but in my tests the results obtained with this version looked slightly more precise.
 
 ____
 
-## **5. Imatge diferència**
+## 5. Difference image
 
-Simplement, consisteix en la substracció de la imatge ictal (quan hi ha una crisi) menys la imatge interictal, ambdues després del processament anterior. Així, s'observen les zones més actives en la crisi i que no ho estaven en estat interictal. També es repeteix la normalització per Z-score per mantenir les dades en el rang d'interés, encara que no sigui necessària.
+This is simply the ictal image (acquired during a seizure) minus the interictal image, both after the processing above. It highlights the regions that are more active during the seizure than in the interictal state. Z-score normalization is applied again to keep the values in the range of interest, although it is not strictly necessary.
 """
 
 #subtract ictal - interictal
@@ -418,31 +431,31 @@ diff_plot.savefig(os.path.join(out_dir, 'diff.png'))
 plotting.show()
 
 """____
-## **6. Selecció de la zona epiletògena**
+## 6. Epileptogenic-zone selection
 
-Cal comentar que per trobar exactament aquesta zona epileptògena s'ha dut a terme el següent càlcul, en el qual es busca el valor màxim dins la imatge diferència:
+To locate the epileptogenic zone exactly, the following computation searches for the maximum value in the difference image:
 """
 
-max_idx = np.argmax(diff_z_data) #index with the max value (diff image after thresholding)
+max_idx = np.argmax(diff_z_data) #index with the max value of the (z-scored) difference image
 x, y, z = np.unravel_index(max_idx, diff_z_data.shape) #x,y,z indexs of the matrix
-print("Els índexs de la matriu del punt màxim són: ", x,y,z)
+print("Array indices of the maximum voxel: ", x,y,z)
 
-"""Com s'observa, el punt màxim de la ZE és el que correspon als índexs (72, 104, 118) de la matriu de la imatge. Ja s'ha explicat al principi que aquests índexs corresponen als valors x=33, y=1 i z=-75 a nivell anatòmic.
+"""The maximum of the EZ corresponds to array indices (72, 104, 118). As explained at the beginning, these indices correspond to anatomical coordinates x=33, y=1, z=-75.
 
-Es pot comprovar que tots els índexs amb valors elevats (per sobre de 4 en aquest cas) es troben al voltant d'aquest punt. El valor de 4 s'ha escollit arbitràriament per fer la comprovació.
+We can check that all indices with high values (above 4 here) lie around this point. The value 4 was chosen arbitrarily for this check.
 """
 
 indices_over_4 = np.argwhere(diff_z_data > 4) #indices > 4
 
-#list of (x, y, z) indices where values are over 7
+#list of (x, y, z) indices where values are over 4
 indices_list = [(x, y, z) for x, y, z in indices_over_4]
 
-print("Índexs amb valor > 4:")
+print("Indices with value > 4:")
 print(indices_list)
 
-"""Com es pot observar en aquest resultat, tots els punts de valor màxim es troben al voltant dels índexs (72, 104, 118), el que confirma que es troba al centre de la Zona Epileptògena. Això també confirma que no hi ha cap altre focus epileptògen de la mateixa importància en tot el cervell.
+"""As this output shows, all the highest-valued voxels lie around indices (72, 104, 118), confirming that this is the centre of the Epileptogenic Zone. It also indicates that there is no other epileptogenic focus of similar magnitude elsewhere in the brain.
 
-Es procedeix a la selecció d'aquesta zona, que es selecciona amb una threshold definida per eliminar els valors inferiors a ella. Aquesta s'ha trobat provant diferents valors en el loop que es mostra a continuació. Cal tenir en compte que aquest loop s'ha fet mirant directament la secció de z=118, que, com s'ha comentat, correspon a la Zona Epileptògena i permet observar els resultats perfectament. Tot i això, també s'ha realitzat en altres valors de z per assegurar que no s'estava ignorant cap altra zona il·luminada.
+The zone is then selected with a threshold that removes all values below it. The threshold was found by trying different values in the loop below. The loop looks directly at slice z=118, which, as discussed, contains the Epileptogenic Zone and shows the results clearly; it was also run at other z values to make sure no other bright region was being missed.
 """
 
 diff_z_data_flat = diff_z_data.flatten()
@@ -453,7 +466,7 @@ thresholds = np.arange(1.5, 4.5, 0.5).tolist()
 section = 118 #plots at z=118 section
 fig, axs = plt.subplots(2, 3) #initialize the subplots (2 rows and 3 columns)
 
-#Iterate over different threshold values to find the best ZE
+#Iterate over different threshold values to find the best EZ (ZE = "zona epileptògena")
 for i, thr in enumerate(thresholds):
   #iterate to identify the ZE (where values > thr) and set other values to 0
   diff_z_data_flat_thr = np.array([0 if diff_z_data_flat[j] < thr else val for j, val in enumerate(diff_z_data_flat)])
@@ -461,7 +474,7 @@ for i, thr in enumerate(thresholds):
 
   row = i // 3  #calculate row index
   col = i % 3   #calculate column index
-  axs[row, col].imshow(histeq(diff_data_i[:,:,section].astype('float')).T, cmap='jet', origin='lower') #plot the ZE fir each sublot
+  axs[row, col].imshow(histeq(diff_data_i[:,:,section].astype('float')).T, cmap='jet', origin='lower') #plot the EZ for each subplot
   axs[row, col].set_title(f'thr={thr}')  #titles for each subplot
   axs[row, col].set_axis_off()  #turn off axis for each subplot
 
@@ -470,7 +483,7 @@ plt.tight_layout() #use a tight layout
 plt.savefig(os.path.join(out_dir, 'ZE_thresholds.png'))
 plt.show()
 
-"""Tenint en compte els resultats trobats, s'ha optat per una threhsold de valor thr=3, que permet veure una Zona Epileptògena suficientment gran per identificar-la i alhora veure'n només un únic focus."""
+"""Given these results, a threshold of thr=3 was chosen: it leaves an Epileptogenic Zone large enough to identify while showing a single focus."""
 
 #Define the threshold for selecting the ZE
 thr = 3 #obtained in the last code section
@@ -485,12 +498,12 @@ ZE_plot = plotting.plot_img(ZE, cut_coords=(33, 1, -75), colorbar=True, title='E
 ZE_plot.savefig(os.path.join(out_dir, 'ZE.png'))
 plotting.show()
 
-"""Amb la thr=3 s'ha identificat la zona del gràfic de dalt com la Zona Epileptògena, ja que és a la que la imatge diferència té la major intensitat. Com s'observa, el punt anatòmic on es centra la ZE és el x=33, y=1 i z=-75.
+"""With thr=3, the region in the figure above is identified as the Epileptogenic Zone, since it is where the difference image has the highest intensity. The anatomical point on which the EZ is centred is x=33, y=1, z=-75.
 
 ____
-## **7. Fusió de la zona epiletògena**
+## 7. Epileptogenic-zone fusion
 
-Per últim, la ZE s'ha mostrat en imatges a sobre de les imatges estructurals proporcionades per RM, de manera que es puguin localitzar aquestes zones al cervell.
+Finally, the EZ is overlaid on the structural MRI so that it can be located in the brain.
 """
 
 #plot the ROI of both the ZE and the masked RM (fusion of both)
@@ -498,7 +511,7 @@ fusion_masked = plotting.plot_roi(ZE, rm_masked, cut_coords=(33, 1, -75), title=
 fusion_masked.savefig(os.path.join(out_dir, 'fusion.png')) #save the image
 plotting.show()
 
-"""Podem veure que amb thr=3 la ZE està molt ben localitzada en un punt concret, però si volem veure'n la influència a una zona una mica més extensa podem reduir la threshold a thr=2, per exemple. El resultat és el següent:"""
+"""With thr=3 the EZ is tightly localized to a single spot; to see its influence over a somewhat larger area, the threshold can be lowered to, e.g., thr=2. The result is:"""
 
 #Define the threshold for selecting the ZE
 thr = 2 #for a more extense ZE
@@ -513,12 +526,12 @@ fusion_masked = plotting.plot_roi(ZE2, rm_masked, cut_coords=(33, 1, -75), title
 fusion_masked.savefig(os.path.join(out_dir, 'fusion2.png')) #save the image
 plotting.show()
 
-"""Com s'observa, el focus epilptògen segueix estant a les coordenades indicades, però es mostren àrees d'alta activitat a zones properes també.
+"""The epileptogenic focus remains at the same coordinates, but high-activity areas in neighbouring regions are now also shown.
 
 ____
-## **8. Localització estructura anatòmica**
+## 8. Anatomical-structure localization
 
-Aquest últim pas no s'ha aconseguit reproduir de forma correcta. En primer lloc s'ha intentat prenent (33, 1,  -75) com a coordenades MNI:
+This last step could not be completed correctly. First, (33, 1, -75) was used directly as MNI coordinates:
 """
 
 # Instantiate the AtlasBrowser class and specify the atlas to use
@@ -530,9 +543,9 @@ coordinates = np.array([[33, 1,  -75]])
 # Find the brain regions at the MNI coordinates (plotting is optional)
 regions = atlas.find_regions(coordinates, plot=True)
 
-"""Com s'observa, la ZE es situa fora del cervell, així que no està funcionant correctament.
+"""The EZ falls outside the brain (the AAL lookup returns 'Undefined'), so this does not work correctly.
 
-També s'ha intentat usar aquestes coordenades com a coordenades del vòxels i transformar-les a coordenades MNI:
+Next, these coordinates were treated as voxel coordinates and transformed to MNI coordinates:
 """
 
 mni_coords = nilearn.image.coord_transform(33, 1, -75, diff.affine)
@@ -545,11 +558,17 @@ atlas = AtlasBrowser("AAL")
 coordinates = np.array([[65.9021224975586, 95.13411140441895,  -240.14212036132812]])
 
 # Find the brain regions at the MNI coordinates (plotting is optional)
-regions = atlas.find_regions(coordinates, plot=True)
+# In the original notebook this lookup failed with a dimension (IndexError) error because the
+# point lies outside the atlas volume; the error is caught and reported here so that the script
+# can run end-to-end.
+try:
+    regions = atlas.find_regions(coordinates, plot=True)
+except IndexError as err:
+    print("Atlas lookup failed (coordinates outside the atlas volume):", err)
 
-"""Com s'observa, dona error de dimensions.
+"""This raises a dimension (out-of-bounds index) error.
 
-Per últim, s'ha intentat fer el càlcul a partir dels índexs de la matriu i transformant-los a coordenades MNI:
+Finally, the array indices were transformed to MNI coordinates:
 """
 
 mni_coords = nilearn.image.coord_transform(72, 104, 118, diff.affine)
@@ -564,9 +583,9 @@ coordinates = np.array([[32.386497497558594, 2.4349365234375, -74.28274536132812
 # Find the brain regions at the MNI coordinates (plotting is optional)
 regions = atlas.find_regions(coordinates, plot=True)
 
-"""Aquí també es situa la ZE fora del cervell, de manera que és erroni.
+"""Here the EZ is again placed outside the brain, so this result is also wrong.
 
-Així, s'ha decidit mostrar un exemple en el qual el codi funciona correctament i dona lloc a una zona prou propera a la ZE (fet a vista). Com s'observa, sembla que es tracta d'un punt proper al pol temporal dret superior i la ZE podria estar per aquesta zona. Aquesta és la figura que s'usa al pòster.
+Therefore, an example is shown where the code works and gives a point reasonably close to the EZ (chosen by eye). It appears to be a point near the right superior temporal pole, so the EZ could lie around this region. This is the (illustrative) figure used in the poster.
 """
 
 # Instantiate the AtlasBrowser class and specify the atlas to use
@@ -578,4 +597,4 @@ coordinates = np.array([[45, 15,  -25]])
 # Find the brain regions at the MNI coordinates (plotting is optional)
 regions = atlas.find_regions(coordinates, plot=True)
 
-"""Com es comenta al pòster, aquests errors segurament es deuen a no haver normalitzat les imatges correctament a l'espai estàndard per trobar les MNI correctes."""
+"""As discussed in the poster, these errors are most likely because the images were not spatially normalized to standard (MNI) space, which is required to obtain correct MNI coordinates."""
