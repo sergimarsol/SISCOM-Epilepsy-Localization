@@ -6,10 +6,8 @@ Usage:
 
 Expected inputs in --data-dir (co-registered NIfTI volumes): crICTAL.nii, cINTERICTAL.nii, RM.nii
 
-Lab 7 - Multimodal imaging techniques in epilepsy (supervisor: Dr. Aida Niñerola)
-Aplicacions Mèdiques de l'Enginyeria I (Medical Applications of Engineering I),
-Biomedical Engineering, Universitat de Barcelona
-Sergi Marsol Torrent - December 2023
+Multimodal imaging for epilepsy: SPECT/MRI epileptogenic-zone localization
+Author: Sergi Marsol Torrent (December 2023), supervised by Dr. Aida Niñerola
 
 Originally written as a Google Colab notebook; the notebook's markdown cells are
 kept below as (English-translated) string blocks between the code sections.

@@ -14,7 +14,7 @@ About a quarter of people with epilepsy have **drug-resistant (pharmacoresistant
 - It is injected again during a seizure-free period, giving an **interictal SPECT**.
 - After co-registration to the patient's **MRI**, the interictal scan is subtracted from the ictal scan. Regions that are hyperperfused during the seizure stand out, and the MRI shows the anatomy around them.
 
-This repository holds Part II of a lab project for *Aplicacions Mèdiques de l'Enginyeria I* (Medical Applications of Engineering I), BSc in Biomedical Engineering, Universitat de Barcelona (December 2023). Part II is the image-processing and localization stage, implemented in Python. Part I, realigning the two SPECTs and co-registering them to the MRI, was done interactively in SPM12/MATLAB and is not part of this code.
+This repository implements the image-processing and localization stage in Python. The preceding stage, realigning the two SPECTs and co-registering them to the MRI, was done interactively in SPM12/MATLAB and is not part of this code.
 
 ## What I built
 
@@ -35,13 +35,13 @@ This repository holds Part II of a lab project for *Aplicacions Mèdiques de l'E
 
 ```mermaid
 flowchart LR
-    subgraph P1["Part I: SPM12 / MATLAB (not in this repo)"]
+    subgraph P1["Co-registration: SPM12 / MATLAB (not in this repo)"]
         A[Ictal SPECT] --> R[SPECT-SPECT realignment]
         B[Interictal SPECT] --> R
         R --> C[Co-registration of SPECTs to MRI]
         M[MRI] --> C
     end
-    subgraph P2["Part II: siscom_pipeline.py"]
+    subgraph P2["SISCOM analysis: siscom_pipeline.py"]
         C --> K[Brain mask from MRI<br/>dipy median_otsu]
         K --> N[Wiener filter + Z-score<br/>on non-zero voxels]
         N --> D[Difference image<br/>ictal − interictal, re-z-scored]
@@ -89,13 +89,13 @@ These results come from the project report (a one-page scientific poster) and th
 - DIPY (`median_otsu`, `histeq`)
 - matplotlib
 - mni-to-atlas (AAL)
-- SPM12 on MATLAB, used upstream for realignment and co-registration (Part I)
+- SPM12 on MATLAB, used upstream for realignment and co-registration
 
 ## Repository structure
 
 ```
 SISCOM-Epilepsy-Localization/
-├── siscom_pipeline.py   # Part II pipeline (comments and notebook notes translated to English)
+├── siscom_pipeline.py   # full SISCOM analysis pipeline (CLI)
 ├── requirements.txt
 ├── LICENSE
 └── .gitignore           # excludes data/, figures/, *.nii, *.nii.gz
@@ -146,7 +146,7 @@ I checked that the script runs end to end on synthetic volumes; it takes about 1
 
 ## Acknowledgements
 
-- Solo project by **Sergi Marsol Torrent** for *Aplicacions Mèdiques de l'Enginyeria I*, BSc Biomedical Engineering, Universitat de Barcelona (lab 7, "Multimodal imaging techniques in epilepsy"), supervised by **Dr. Aida Niñerola** (Nuclear Medicine, Hospital Clínic de Barcelona).
+- Developed by **Sergi Marsol Torrent** (individual work) in *Medical Applications of Engineering I*, BSc Biomedical Engineering, Universitat de Barcelona (December 2023), supervised by **Dr. Aida Niñerola** (Nuclear Medicine, Hospital Clínic de Barcelona).
 - The images were provided by the course.
 - SISCOM: O'Brien et al., *Nucl Med Commun* 19:31–45, 1998.
 - Wiener filtering for nuclear medicine: King et al., *Med Phys* 10(6):876–880, 1983.
